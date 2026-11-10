@@ -30,6 +30,14 @@ Luego visita `http://localhost:3000`.
 | `↑`       | Propulsar  |
 | `Espacio` | Disparar   |
 
+## Power-ups
+
+| Power-up | Efecto |
+| -------- | ------ |
+| Escudo   | Al recogerlo, la nave queda rodeada por un anillo cian durante 5 s: los asteroides que la tocan se destruyen (suman puntos) sin dañarla. |
+
+Al destruir asteroides con balas hay un 15 % de probabilidad de que aparezca uno en pantalla (uno a la vez); si no se recoge en 12 s, desaparece.
+
 ## Puntuación
 
 | Asteroide | Puntos |
@@ -43,3 +51,4 @@ Luego visita `http://localhost:3000`.
 - 3 vidas con invencibilidad temporal al reaparecer (parpadeo)
 - Asteroides se parten en fragmentos más pequeños al ser destruidos
 - Partículas de explosión al destruir asteroides
+- Power-up de escudo recogible: 5 s de inmunidad que destruye asteroides al contacto
