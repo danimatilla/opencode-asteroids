@@ -40,11 +40,12 @@ Al destruir asteroides con balas hay un 15 % de probabilidad de que aparezca uno
 
 ## Puntuación
 
-| Asteroide | Puntos |
-| --------- | ------ |
-| Grande    | 20     |
-| Mediano   | 50     |
-| Pequeño   | 100    |
+| Asteroide      | Puntos |
+| -------------- | ------ |
+| Grande         | 20     |
+| Mediano        | 50     |
+| Pequeño        | 100    |
+| Estrella fugaz | 250    |
 
 ## Características
 
@@ -52,3 +53,4 @@ Al destruir asteroides con balas hay un 15 % de probabilidad de que aparezca uno
 - Asteroides se parten en fragmentos más pequeños al ser destruidos
 - Partículas de explosión al destruir asteroides
 - Power-up de escudo recogible: 5 s de inmunidad que destruye asteroides al contacto
+- Estrella fugaz: desde el nivel 2 aparece periódicamente (chance cada 10 s) y cruza la pantalla a gran velocidad; su rastro daña a la nave salvo con escudo, y destruirla con una bala vale 250 puntos
