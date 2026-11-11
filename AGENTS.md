@@ -17,5 +17,6 @@ Clon de Asteroids en canvas HTML5 puro. Sin dependencias, sin bundler, sin `pack
 
 ## Notas
 
+- Naves: `SHIP_TYPES` en `game.js` define la clásica (×1 puntos) y la pesada (más grande, ×2 puntos); se eligen en la pantalla inicial o con `S` desde GAME OVER.
 - Power-ups: solo el escudo (`PowerUp` en `game.js`, recogible, 5 s de duración). El README menciona además la "estrella fugaz", que no está implementada.
 - Todo texto visible al usuario (HUD, overlays) y los comentarios están en español; los identificadores en inglés.

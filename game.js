@@ -225,7 +225,6 @@ class ShootingStar {
 const POWERUP_CHANCE  = 0.15;  // probabilidad de drop al destruir un asteroide
 const POWERUP_TTL     = 12;    // s en pantalla antes de desaparecer
 const SHIELD_DURATION = 5;     // s de escudo al recoger el power-up
-const SHIELD_RADIUS   = 22;    // radio visual y de choque del escudo
 const POWERUP_COLOR   = '#6cf';
 
 class PowerUp {
@@ -295,8 +294,30 @@ class PowerUp {
 }
 
 // ── Ship ──────────────────────────────────────────────────────────────────────
+const SHIP_TYPES = [
+  {
+    name: 'CLÁSICA',
+    description: 'TAMAÑO NORMAL · ×1 PUNTOS',
+    radius: 12,
+    scale: 1,
+    nose: 21,
+    scoreMultiplier: 1,
+  },
+  {
+    name: 'PESADA',
+    description: 'MÁS GRANDE · ×2 PUNTOS',
+    radius: 20,
+    scale: 1.6,
+    nose: 34,
+    scoreMultiplier: 2,
+  },
+];
+
 class Ship {
-  constructor() { this.reset(); }
+  constructor(type = SHIP_TYPES[0]) {
+    this.type = type;
+    this.reset();
+  }
 
   get shielded() { return this.shieldTime > 0; }
 
@@ -306,7 +327,10 @@ class Ship {
     this.angle  = -Math.PI / 2;
     this.vx     = 0;
     this.vy     = 0;
-    this.radius = 12;
+    this.radius = this.type.radius;
+    this.scale  = this.type.scale;
+    this.scoreMultiplier = this.type.scoreMultiplier;
+    this.shieldRadius    = this.type.radius + 10;
     this.thrusting     = false;
     this.invincible    = 3;
     this.shootCooldown = 0;
@@ -342,7 +366,7 @@ class Ship {
   tryShoot() {
     if (this.shootCooldown > 0 || this.dead) return [];
     this.shootCooldown = 0.2;
-    const NOSE = 21;
+    const NOSE = this.type.nose;
     const ox = this.x + Math.cos(this.angle) * NOSE;
     const oy = this.y + Math.sin(this.angle) * NOSE;
     return [new Bullet(ox, oy, this.angle)];
@@ -356,8 +380,9 @@ class Ship {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
+    ctx.scale(this.scale, this.scale);
     ctx.strokeStyle = '#fff';
-    ctx.lineWidth   = 1.5;
+    ctx.lineWidth   = 1.5 / this.scale;
     ctx.lineJoin    = 'round';
 
     // Silueta clásica: triángulo con muesca trasera
@@ -379,6 +404,8 @@ class Ship {
       ctx.stroke();
     }
 
+    ctx.restore();
+
     // Anillo de escudo: pulsa suave y parpadea en su último segundo
     if (this.shielded) {
       const ending = this.shieldTime < 1 && Math.floor(this.shieldTime * 8) % 2 === 0;
@@ -388,15 +415,19 @@ class Ship {
         ctx.strokeStyle = POWERUP_COLOR;
         ctx.lineWidth   = 2;
         ctx.beginPath();
-        ctx.arc(0, 0, SHIELD_RADIUS, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, this.shieldRadius, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
       }
     }
-
-    ctx.restore();
   }
 }
+
+const previewShips = SHIP_TYPES.map(type => {
+  const preview = new Ship(type);
+  preview.invincible = 0;
+  return preview;
+});
 
 // ── Partículas (explosión) ────────────────────────────────────────────────────
 class Particle {
@@ -433,9 +464,10 @@ class Particle {
 // ── Estado del juego ──────────────────────────────────────────────────────────
 let ship, bullets, asteroids, particles, powerups, shootingStars;
 let score, lives, level;
-let state;      // 'playing' | 'dead' | 'gameover'
+let state;      // 'select' | 'playing' | 'dead' | 'gameover'
 let deadTimer;
 let starTimer;
+let shipTypeIndex = 0;
 
 function spawnAsteroids(count) {
   const SAFE_DIST = 130;
@@ -449,8 +481,8 @@ function spawnAsteroids(count) {
   }
 }
 
-function initGame() {
-  ship          = new Ship();
+function resetWorld() {
+  ship          = new Ship(SHIP_TYPES[shipTypeIndex]);
   bullets   = [];
   asteroids = [];
   particles = [];
@@ -459,9 +491,18 @@ function initGame() {
   score  = 0;
   lives  = 3;
   level  = 1;
-  state  = 'playing';
   starTimer = STAR_SPAWN_EVERY;
+}
+
+function startGame() {
+  resetWorld();
+  state = 'playing';
   spawnAsteroids(4);
+}
+
+function showShipSelect() {
+  resetWorld();
+  state = 'select';
 }
 
 function nextLevel() {
@@ -481,7 +522,7 @@ function explode(x, y, count = 8) {
 
 function destroyAsteroid(a, fragments) {
   a.dead = true;
-  score += POINTS[a.size];
+  score += POINTS[a.size] * ship.scoreMultiplier;
   explode(a.x, a.y, a.size * 5);
   fragments.push(...a.split());
 }
@@ -505,7 +546,7 @@ function killShip() {
 
 function destroyShootingStar(s) {
   s.expired = true;
-  score += STAR_POINTS;
+  score += STAR_POINTS * ship.scoreMultiplier;
   explode(s.x, s.y, 12);
 }
 
@@ -526,8 +567,18 @@ function trailHitsShip() {
 
 // ── Update ────────────────────────────────────────────────────────────────────
 function update(dt) {
+  if (state === 'select') {
+    if (pressed('ArrowLeft'))
+      shipTypeIndex = (shipTypeIndex + SHIP_TYPES.length - 1) % SHIP_TYPES.length;
+    if (pressed('ArrowRight'))
+      shipTypeIndex = (shipTypeIndex + 1) % SHIP_TYPES.length;
+    if (pressed('Space')) startGame();
+    return;
+  }
+
   if (state === 'gameover') {
-    if (pressed('Space')) initGame();
+    if (pressed('Space')) startGame();
+    if (pressed('KeyS')) showShipSelect();
     particles.forEach(p => p.update(dt));
     particles = particles.filter(p => !p.dead);
     return;
@@ -585,7 +636,7 @@ function update(dt) {
 
   // Nave vs asteroide: con escudo el asteroide se destruye sin dañar la nave
   const shieldFragments = [];
-  const hitRadius = ship.shielded ? SHIELD_RADIUS : ship.radius;
+  const hitRadius = ship.shielded ? ship.shieldRadius : ship.radius;
   for (const a of asteroids) {
     if (a.dead) continue;
     if (dist(ship, a) >= hitRadius + a.radius * 0.82) continue;
@@ -653,6 +704,12 @@ function drawHUD() {
   ctx.textAlign = 'left';
   ctx.fillText(`SCORE  ${score}`, 14, 26);
 
+  ctx.fillStyle = 'rgba(255,255,255,0.65)';
+  ctx.font = '13px monospace';
+  ctx.fillText(`${ship.type.name}  ×${ship.scoreMultiplier}`, 14, 46);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = '15px monospace';
   ctx.textAlign = 'center';
   ctx.fillText(`NIVEL ${level}`, W / 2, 26);
 
@@ -664,6 +721,43 @@ function drawHUD() {
     ctx.textAlign = 'right';
     ctx.fillText(`ESCUDO ${ship.shieldTime.toFixed(1)}`, W - 16, 48);
   }
+}
+
+function drawShipSelect() {
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#fff';
+  ctx.font      = 'bold 40px monospace';
+  ctx.fillText('ELIGE TU NAVE', W / 2, 140);
+
+  const y      = H / 2 - 10;
+  const gap    = 210;
+  const startX = W / 2 - gap * (SHIP_TYPES.length - 1) / 2;
+
+  SHIP_TYPES.forEach((type, i) => {
+    const x = startX + i * gap;
+    const preview = previewShips[i];
+    preview.x = x;
+    preview.y = y;
+    preview.draw();
+
+    if (i === shipTypeIndex) {
+      ctx.strokeStyle = POWERUP_COLOR;
+      ctx.lineWidth   = 2;
+      ctx.strokeRect(x - 80, y - 70, 160, 160);
+    }
+
+    ctx.fillStyle = i === shipTypeIndex ? '#fff' : 'rgba(255,255,255,0.5)';
+    ctx.font      = 'bold 18px monospace';
+    ctx.fillText(type.name, x, y + 78);
+
+    ctx.fillStyle = i === shipTypeIndex ? POWERUP_COLOR : 'rgba(255,255,255,0.4)';
+    ctx.font      = '14px monospace';
+    ctx.fillText(type.description, x, y + 100);
+  });
+
+  ctx.fillStyle = 'rgba(255,255,255,0.65)';
+  ctx.font      = '16px monospace';
+  ctx.fillText('← → PARA ELEGIR   —   ESPACIO PARA JUGAR', W / 2, H - 80);
 }
 
 function drawOverlay(title, sub) {
@@ -680,6 +774,11 @@ function draw() {
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, W, H);
 
+  if (state === 'select') {
+    drawShipSelect();
+    return;
+  }
+
   particles.forEach(p => p.draw());
   asteroids.forEach(a => a.draw());
   shootingStars.forEach(s => s.draw());
@@ -690,7 +789,7 @@ function draw() {
   drawHUD();
 
   if (state === 'gameover')
-    drawOverlay('GAME OVER', `PUNTAJE: ${score}   —   ESPACIO PARA REINICIAR`);
+    drawOverlay('GAME OVER', `PUNTAJE: ${score}   —   ESPACIO PARA REINICIAR   —   S PARA ELEGIR NAVE`);
 }
 
 // ── Loop principal ────────────────────────────────────────────────────────────
@@ -704,5 +803,5 @@ function loop(ts) {
   requestAnimationFrame(loop);
 }
 
-initGame();
+showShipSelect();
 requestAnimationFrame(loop);
