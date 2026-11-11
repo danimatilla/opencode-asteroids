@@ -26,9 +26,20 @@ Luego visita `http://localhost:3000`.
 
 | Tecla     | Acción     |
 | --------- | ---------- |
-| `←` `→`   | Rotar nave |
+| `←` `→`   | Rotar nave (o elegir nave en la pantalla de selección) |
 | `↑`       | Propulsar  |
-| `Espacio` | Disparar   |
+| `Espacio` | Disparar / confirmar |
+
+## Naves
+
+Antes de empezar, y al pulsar `S` en la pantalla de GAME OVER, puedes elegir entre dos naves:
+
+| Nave    | Tamaño                          | Puntos |
+| ------- | ------------------------------- | ------ |
+| Clásica | Normal                          | ×1     |
+| Pesada  | Más grande (mayor hitbox)       | ×2     |
+
+La nave pesada es más fácil de impactar, pero todos los puntos que consigas (asteroides y estrella fugaz) se duplican.
 
 ## Power-ups
 
@@ -49,6 +60,7 @@ Al destruir asteroides con balas hay un 15 % de probabilidad de que aparezca uno
 
 ## Características
 
+- Dos naves seleccionables: clásica (×1 puntos) y pesada (más grande, ×2 puntos)
 - 3 vidas con invencibilidad temporal al reaparecer (parpadeo)
 - Asteroides se parten en fragmentos más pequeños al ser destruidos
 - Partículas de explosión al destruir asteroides
