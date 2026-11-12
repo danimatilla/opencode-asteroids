@@ -282,7 +282,8 @@ jobs:
           - No modifiques ningún otro archivo.
           - Escribe el resultado en .issue-context.md.
           EOF
-          opencode run --model opencode/big-pickle --auto --archived --standalone "$(cat "$RUNNER_TEMP/issue-prompt.md")" 2>&1 | tee opencode.log
+          opencode run --model opencode/big-pickle --auto "$(cat "$RUNNER_TEMP/issue-prompt.md")" 2>&1 | tee opencode.log
+          test -s .issue-context.md || { echo "::error::opencode no generó .issue-context.md"; exit 1; }
 
       - name: Añadir información al issue
         if: steps.prepare.outputs.skip != 'true'
