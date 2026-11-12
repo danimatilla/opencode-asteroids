@@ -226,7 +226,11 @@ jobs:
 
       - name: Instalar opencode
         if: steps.prepare.outputs.skip != 'true'
-        run: curl -fsSL https://opencode.ai/install | bash
+        run: |
+          # El instalador de /install solo sirve OpenCode 1; el config usa V2.
+          curl -fsSL https://opencode.ai/v2/install | bash
+          export PATH="$HOME/.opencode/bin:$PATH"
+          opencode --version
 
       - name: Añadir opencode al PATH
         if: steps.prepare.outputs.skip != 'true'
@@ -282,7 +286,7 @@ jobs:
           - No modifiques ningún otro archivo.
           - Escribe el resultado en .issue-context.md.
           EOF
-          opencode run --model opencode/big-pickle --auto "$(cat "$RUNNER_TEMP/issue-prompt.md")" 2>&1 | tee opencode.log
+          opencode run --model opencode/big-pickle --auto --standalone "$(cat "$RUNNER_TEMP/issue-prompt.md")" 2>&1 | tee opencode.log
           test -s .issue-context.md || { echo "::error::opencode no generó .issue-context.md"; exit 1; }
 
       - name: Añadir información al issue
