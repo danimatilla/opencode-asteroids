@@ -8,19 +8,38 @@ on:
 
 jobs:
   opencode:
-    if: |
-      contains(github.event.comment.body, '/oc') ||
-      contains(github.event.comment.body, '/opencode')
+    # Evita el bucle: los comentarios del propio bot contienen la URL del run
+    # con "/opencode" en el nombre del repo y volverían a disparar el workflow.
+    if: github.event.comment.user.type != 'Bot'
     runs-on: ubuntu-latest
+    concurrency:
+      group: opencode-${{ github.event.comment.id }}
+      cancel-in-progress: false
     permissions:
       id-token: write
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      # Misma regla que el action: /oc o /opencode como palabra suelta.
+      - name: Validar mención
+        id: guard
+        shell: bash
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          if [[ "$COMMENT_BODY" =~ (^|[[:space:]])(/opencode|/oc)([[:space:]]|$) ]]; then
+            echo "match=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "match=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Checkout repository
+        if: steps.guard.outputs.match == 'true'
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
           persist-credentials: false
-      - uses: anomalyco/opencode/github@latest
+      - name: Run opencode
+        if: steps.guard.outputs.match == 'true'
+        uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:
